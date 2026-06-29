@@ -3745,6 +3745,10 @@ bool Changelog::flush()
         std::unique_lock lock{durable_idx_mutex};
         durable_idx_cv.wait(lock, [&] { return *failed_ptr || last_durable_idx == max_log_id.load(std::memory_order_relaxed); });
 
+        // Write thread called addLogLocations() while processing the Flush; move them to
+        // logs_location now (flushAsync's refreshCache ran before the write thread flushed).
+        entry_storage.refreshCache();
+
         return !*failed_ptr;
     }
 
